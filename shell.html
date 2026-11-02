@@ -9,24 +9,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0}
-  html,body{height:100%;background:#08070d;color:#f5f1e8;font-family:Inter,system-ui,sans-serif;overflow:hidden}
-  body{display:grid;place-items:center;padding:16px}
-  .glow{position:fixed;border-radius:50%;filter:blur(70px);opacity:.6;pointer-events:none}
-  .glow.a{width:80vmax;height:80vmax;left:-30vmax;top:-30vmax;background:radial-gradient(circle,#5a3bff 0%,transparent 62%)}
-  .glow.b{width:80vmax;height:80vmax;right:-35vmax;bottom:-35vmax;background:radial-gradient(circle,#d92a63 0%,transparent 60%)}
-  form{position:relative;width:min(340px,100%);display:flex;flex-direction:column;gap:14px;text-align:center}
-  h1{font-family:Fraunces,serif;font-weight:600;font-size:40px;letter-spacing:-.5px}
-  em{font-family:Fraunces,serif;font-style:italic;font-weight:300;font-size:20px;color:rgba(245,241,232,.6);margin:-12px 0 18px}
-  input{height:50px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:16px;text-align:center;outline:none;backdrop-filter:blur(10px)}
-  input:focus{border-color:rgba(245,241,232,.5)}
-  button{height:50px;border-radius:999px;border:0;background:#f5f1e8;color:#0b0a10;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
-  button:disabled{opacity:.6}
-  p{min-height:20px;font-size:13px;color:#ff8fb0}
-  .hide{visibility:hidden}
+  /* every rule is scoped to #lock so nothing can leak into the app after unlock */
+  #lock{position:fixed;inset:0;display:grid;place-items:center;padding:16px;overflow:hidden;background:#08070d;color:#f5f1e8;font-family:Inter,system-ui,sans-serif}
+  #lock *{box-sizing:border-box;margin:0}
+  #lock .glow{position:absolute;border-radius:50%;filter:blur(70px);opacity:.6;pointer-events:none}
+  #lock .glow.a{width:80vmax;height:80vmax;left:-30vmax;top:-30vmax;background:radial-gradient(circle,#5a3bff 0%,transparent 62%)}
+  #lock .glow.b{width:80vmax;height:80vmax;right:-35vmax;bottom:-35vmax;background:radial-gradient(circle,#d92a63 0%,transparent 60%)}
+  #lock form{position:relative;width:min(340px,100%);display:flex;flex-direction:column;gap:14px;text-align:center}
+  #lock h1{font-family:Fraunces,serif;font-weight:600;font-size:40px;letter-spacing:-.5px}
+  #lock em{font-family:Fraunces,serif;font-style:italic;font-weight:300;font-size:20px;color:rgba(245,241,232,.6);margin:-12px 0 18px}
+  #lock input{height:50px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:16px;text-align:center;outline:none;backdrop-filter:blur(10px)}
+  #lock input:focus{border-color:rgba(245,241,232,.5)}
+  #lock button{height:50px;border-radius:999px;border:0;background:#f5f1e8;color:#0b0a10;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+  #lock button:disabled{opacity:.6}
+  #lock p{min-height:20px;font-size:13px;color:#ff8fb0}
+  #lock .hide{visibility:hidden}
 </style>
 </head>
-<body>
+<body style="margin:0;background:#08070d">
+<div id="lock">
 <div class="glow a"></div><div class="glow b"></div>
 <form id="f" class="hide">
   <h1>Dr. Joe</h1><em>daily scroll</em>
@@ -34,12 +35,15 @@
   <button id="go">Open</button>
   <p id="m" role="status"></p>
 </form>
+</div>
 <script>
 (function(){ // wrapped so nothing here clashes with the app's own globals
   const D = __DATA__;
   const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   const raw = u => btoa(String.fromCharCode(...new Uint8Array(u)));
-  const show = html => { document.open(); document.write(html); document.close(); };
+  // replace the page only once it has fully loaded; earlier, the old styles can survive the swap
+  const loaded = document.readyState === "complete" ? Promise.resolve() : new Promise(r => addEventListener("load", r, {once:true}));
+  const show = html => loaded.then(() => { document.open(); document.write(html); document.close(); });
   const decrypt = k => crypto.subtle.decrypt({name:"AES-GCM", iv:b64(D.iv)}, k, b64(D.ct)).then(pt => new TextDecoder().decode(pt));
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 
