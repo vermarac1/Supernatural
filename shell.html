@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!--pwa-->
-<title>Dr. Joe — Scroll</title>
+<title>Supernatural</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
 <div id="lock">
 <div class="glow a"></div><div class="glow b"></div>
 <form id="f" class="hide">
-  <h1>Dr. Joe</h1><em>daily scroll</em>
+  <h1>Supernatural</h1><em>daily scroll</em>
   <input id="p" type="password" placeholder="Passphrase" aria-label="Passphrase" autocomplete="current-password" autocapitalize="off">
   <button id="go">Open</button>
   <p id="m" role="status"></p>
@@ -52,7 +52,7 @@
 
   // remembered key: open straight away
   let stored = null; try{ stored = localStorage.getItem("jb_key"); }catch(e){}
-  if(stored) crypto.subtle.importKey("raw", b64(stored), "AES-GCM", false, ["decrypt"]).then(decrypt).then(show)
+  if(stored) (window.__k = stored, crypto.subtle).importKey("raw", b64(stored), "AES-GCM", false, ["decrypt"]).then(decrypt).then(show)
     .catch(() => { try{ localStorage.removeItem("jb_key"); }catch(e){} ask(); }); // passphrase changed since
   else ask();
 
@@ -63,7 +63,8 @@
       const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(p.value), "PBKDF2", false, ["deriveKey"]);
       const k = await crypto.subtle.deriveKey({name:"PBKDF2", salt:b64(D.salt), iterations:D.iter, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, true, ["decrypt"]);
       const html = await decrypt(k);
-      try{ localStorage.setItem("jb_key", raw(await crypto.subtle.exportKey("raw", k))); }catch(e){}
+      window.__k = raw(await crypto.subtle.exportKey("raw", k)); // images are decrypted with the same key
+      try{ localStorage.setItem("jb_key", window.__k); }catch(e){}
       show(html);
     }catch(err){ m.textContent = "That's not it. Try again."; p.select(); go.disabled = false; }
   };
